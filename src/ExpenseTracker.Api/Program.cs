@@ -1,5 +1,9 @@
-using ExpenseTracker.Infrastructure; //brings in the DbContext
-using Microsoft.EntityFrameworkCore; //EF Core extension methods like UseSqlServer
+using ExpenseTracker.Application.Interfaces.Repositories;
+using ExpenseTracker.Application.Interfaces.Services;
+using ExpenseTracker.Application.Services;
+using ExpenseTracker.Infrastructure;
+using ExpenseTracker.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +18,11 @@ builder.Services.AddDbContext<ExpenseTrackerDbContext>(options =>   //register m
     options.UseSqlServer(cs); //take the ConnectionString from my appsetting.Development.json and use in order to make a database using SQL server
     //now the database exists and when i want later to use it inside my controller, i can simply make a constructor using it with DI ... (_db = db)
 });
+
+// Services (Application)
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IExpenseService, ExpenseService>();
 
 var app = builder.Build(); //create the web app pipeline object
 

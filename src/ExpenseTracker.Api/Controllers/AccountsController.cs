@@ -1,7 +1,9 @@
+using ExpenseTracker.Application.Interfaces.Services;
 using ExpenseTracker.Domain.Entities;
 using ExpenseTracker.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 
 namespace ExpenseTracker.Api.Controllers; // asp.net core automatically looks for controllers inside .api.controllers namespaces when i call app.MapControllers() in program.cs
 
@@ -9,21 +11,27 @@ namespace ExpenseTracker.Api.Controllers; // asp.net core automatically looks fo
 [Route("api/[controller]")]
 public class AccountsController : ControllerBase
 {
-    private readonly ExpenseTrackerDbContext _db;
-    public AccountsController(ExpenseTrackerDbContext db) => _db = db; //everytime i call an endpoint, asp.net gives my controller a connection to the sql database
+    private readonly IAccountService _accountService;
+
+    public AccountsController(IAccountService accountService)
+    {
+        _accountService = accountService;
+    }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Account>>> GetAll()
-        => Ok(await _db.Accounts.AsNoTracking().ToListAsync()); //it is simple because account does not have any relationships, it simply takes the account data that the user gave, unlikely the expense controller, where the expense includes account and category and i have to include and select manually in order to control what the JSON will look like
-
+    {
+        var accounts = await _accountService.GetAllAsync();
+        return Ok(accounts);
+    }
+        
+        
     public record CreateAccountRequest(string Name, decimal StartingBalance); //this defines what the client must send in the request JSON body. 
 
     [HttpPost]
     public async Task<ActionResult<Account>> Create(CreateAccountRequest req) //takes the JSON body that the client  enterd and created a C# object named req
     {
-        var account = new Account { Name = req.Name, StartingBalance = req.StartingBalance }; //create a new instance in memory 
-        _db.Accounts.Add(account); //to be inserted 
-        await _db.SaveChangesAsync(); //EF looks at all tracked entinties and runs the sql insert command to add it into the database, and then sql server creates a new row in the account table, generates a new Id and returns that Id to EF Core.
+        var account = await _accountService.CreateAsync(req.Name,req.StartingBalance);
         return CreatedAtAction(nameof(GetAll), new { id = account.Id }, account); //returns http 201 created, includes new resource info like the Id.
     }
 }
