@@ -30,5 +30,10 @@ namespace ExpenseTracker.Infrastructure.Repositories
                 .Where(c => c.Type == type)
                 .ToListAsync();
         }
+
+        public Task<bool> HasExpensesAsync(int categoryId)
+        {
+            return _dbContext.Expenses.AnyAsync(e => e.CategoryId == categoryId);
+        }
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using ExpenseTracker.Domain.Entities;
 
@@ -11,6 +12,7 @@ namespace ExpenseTracker.Application.Interfaces.Repositories
     {
         Task<bool> ExistsAsync(int categoryId);
         Task<bool> ExistsByNameAsync(string name);
+        Task<bool> HasExpensesAsync(int categoryId);
         Task<IReadOnlyList<Category>> GetByTypeAsync(CategoryType type);
     }
 }
