@@ -42,5 +42,52 @@ namespace ExpenseTracker.Application.Services
 
             return account;
         }
+
+        public Task<Account?> GetByIdAsync(int id)
+        {
+            return _accountRepository.GetByIdAsync(id);
+        }
+        public async Task<Account?> UpdateAsync(int id, string name, decimal startingBalance)
+        {
+            var account = await _accountRepository.GetByIdAsync(id);
+            if (account is null) return null;
+
+            if ( string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentException("Account name is required.", nameof(name));
+            }
+
+            var exists = await _accountRepository.ExistsByNameAsync(name);
+            if (exists && !string.Equals(account.Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("An account with the same name already exists.");
+            }
+
+            account.Name = name;
+            account.StartingBalance = startingBalance;
+
+            _accountRepository.Update(account);
+            await _accountRepository.SaveChangesAsync();
+
+            return account;
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var account = await _accountRepository.GetByIdAsync(id);
+            if (account is null) return false;
+
+            var hasExpenses = await _accountRepository.HasExpensesAsync(id);
+            if (hasExpenses)
+            {
+                throw new InvalidOperationException("Account cannot be deleted, since it has related expenses.");
+            }
+
+            _accountRepository.Remove(account);
+            await _accountRepository.SaveChangesAsync();
+
+            return true;
+
+        }
     }
 }

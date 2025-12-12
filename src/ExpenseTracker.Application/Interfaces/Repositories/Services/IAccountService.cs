@@ -8,5 +8,8 @@ namespace ExpenseTracker.Application.Interfaces.Services
     {
         Task<IReadOnlyList<Account>> GetAllAsync();
         Task<Account> CreateAsync(string name, decimal startingBalance);
+        Task<Account?> GetByIdAsync(int id);
+        Task<Account?> UpdateAsync(int id, string name, decimal startingBalance);
+        Task<bool> DeleteAsync(int id);
     }
 }
