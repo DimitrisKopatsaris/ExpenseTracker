@@ -23,6 +23,9 @@ builder.Services.AddDbContext<ExpenseTrackerDbContext>(options =>   //register m
     //now the database exists and when i want later to use it inside my controller, i can simply make a constructor using it with DI ... (_db = db)
 });
 
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
 // Services (Application)
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
