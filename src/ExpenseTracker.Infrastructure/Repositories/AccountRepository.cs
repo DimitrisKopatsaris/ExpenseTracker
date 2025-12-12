@@ -21,5 +21,10 @@ namespace ExpenseTracker.Infrastructure.Repositories
         {
             return _dbContext.Accounts.AnyAsync(a => a.Name == name);
         }
+
+        public Task<bool> HasExpensesAsync(int accountId)
+        {
+            return _dbContext.Expenses.AnyAsync(e => e.AccountId == accountId);
+        }
     }
 }

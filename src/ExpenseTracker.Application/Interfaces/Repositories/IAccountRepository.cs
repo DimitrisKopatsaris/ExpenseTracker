@@ -10,5 +10,7 @@ namespace ExpenseTracker.Application.Interfaces.Repositories
     {
         Task<bool> ExistsAsync(int accountId);
         Task<bool> ExistsByNameAsync(string name);
+        Task<bool> HasExpensesAsync(int accountId);
+
     }
 }
