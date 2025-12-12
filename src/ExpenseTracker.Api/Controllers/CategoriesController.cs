@@ -1,5 +1,6 @@
+using AutoMapper;
+using ExpenseTracker.Application.DTOs.Categories;
 using ExpenseTracker.Application.Interfaces.Services;
-using ExpenseTracker.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ExpenseTracker.Api.Controllers;
@@ -9,26 +10,28 @@ namespace ExpenseTracker.Api.Controllers;
 public class CategoriesController : ControllerBase
 {
     private readonly ICategoryService _categoryService;
+    private readonly IMapper _mapper;
 
-    public CategoriesController(ICategoryService categoryService)
+    public CategoriesController(ICategoryService categoryService, IMapper mapper)
     {
         _categoryService = categoryService;
+        _mapper = mapper;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Category>>> GetAll()
+    public async Task<ActionResult<IEnumerable<CategoryDto>>> GetAll()
     {
         var categories = await _categoryService.GetAllAsync();
-        return Ok(categories);
+        var dtos = _mapper.Map<List<CategoryDto>>(categories);
+        return Ok(dtos);
     }
 
-    public record CreateCategoryRequest(string Name, CategoryType Type);
-
     [HttpPost]
-    public async Task<ActionResult<Category>> Create(CreateCategoryRequest req)
+    public async Task<ActionResult<CategoryDto>> Create(CreateCategoryDto dto)
     {
-        var cat = await _categoryService.CreateAsync(req.Name, req.Type);
+        var category = await _categoryService.CreateAsync(dto.Name, dto.Type);
+        var result = _mapper.Map<CategoryDto>(category);
 
-        return CreatedAtAction(nameof(GetAll), new { id = cat.Id }, cat);
+        return CreatedAtAction(nameof(GetAll), new { id = result.Id }, result);
     }
 }

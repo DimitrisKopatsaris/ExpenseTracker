@@ -1,37 +1,37 @@
+using AutoMapper;
+using ExpenseTracker.Application.DTOs.Accounts;
 using ExpenseTracker.Application.Interfaces.Services;
-using ExpenseTracker.Domain.Entities;
-using ExpenseTracker.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
 
-namespace ExpenseTracker.Api.Controllers; // asp.net core automatically looks for controllers inside .api.controllers namespaces when i call app.MapControllers() in program.cs
+namespace ExpenseTracker.Api.Controllers;
 
-[ApiController] //it tells that this class handles HTTP API requests, and enables automatic transformation from JSON request bodies into C# objects
+[ApiController]
 [Route("api/[controller]")]
 public class AccountsController : ControllerBase
 {
     private readonly IAccountService _accountService;
+    private readonly IMapper _mapper;
 
-    public AccountsController(IAccountService accountService)
+    public AccountsController(IAccountService accountService, IMapper mapper)
     {
         _accountService = accountService;
+        _mapper = mapper;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Account>>> GetAll()
+    public async Task<ActionResult<IEnumerable<AccountDto>>> GetAll()
     {
         var accounts = await _accountService.GetAllAsync();
-        return Ok(accounts);
+        var dtos = _mapper.Map<List<AccountDto>>(accounts);
+        return Ok(dtos);
     }
-        
-        
-    public record CreateAccountRequest(string Name, decimal StartingBalance); //this defines what the client must send in the request JSON body. 
 
     [HttpPost]
-    public async Task<ActionResult<Account>> Create(CreateAccountRequest req) //takes the JSON body that the client  enterd and created a C# object named req
+    public async Task<ActionResult<AccountDto>> Create(CreateAccountDto dto)
     {
-        var account = await _accountService.CreateAsync(req.Name,req.StartingBalance);
-        return CreatedAtAction(nameof(GetAll), new { id = account.Id }, account); //returns http 201 created, includes new resource info like the Id.
+        var account = await _accountService.CreateAsync(dto.Name, dto.StartingBalance);
+        var result = _mapper.Map<AccountDto>(account);
+
+        return CreatedAtAction(nameof(GetAll), new { id = result.Id }, result);
     }
 }

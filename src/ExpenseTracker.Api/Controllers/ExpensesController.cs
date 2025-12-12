@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AutoMapper;
+using ExpenseTracker.Application.DTOs.Expenses;
 using ExpenseTracker.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,155 +13,101 @@ namespace ExpenseTracker.Api.Controllers;
 public class ExpensesController : ControllerBase
 {
     private readonly IExpenseService _expenseService;
+    private readonly IMapper _mapper;
 
-    public ExpensesController(IExpenseService expenseService)
+    public ExpensesController(IExpenseService expenseService, IMapper mapper)
     {
         _expenseService = expenseService;
+        _mapper = mapper;
     }
 
     // GET: /api/expenses
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<object>>> GetAll()
+    public async Task<ActionResult<IEnumerable<ExpenseDto>>> GetAll()
     {
         var expenses = await _expenseService.GetAllWithDetailsAsync();
-
-        var data = expenses
-            .Select(e => new
-            {
-                e.Id,
-                e.Amount,
-                e.OccurredOnUtc,
-                e.Note,
-                Account = new { e.AccountId, e.Account.Name },
-                Category = new { e.CategoryId, e.Category.Name, e.Category.Type }
-            })
-            .ToList();
-
-        return Ok(data);
+        var dtos = _mapper.Map<List<ExpenseDto>>(expenses);
+        return Ok(dtos);
     }
 
     // GET: /api/expenses/{id}
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<object>> GetById(int id)
+    public async Task<ActionResult<ExpenseDto>> GetById(int id)
     {
-        var e = await _expenseService.GetByIdWithDetailsAsync(id);
+        var expense = await _expenseService.GetByIdWithDetailsAsync(id);
 
-        if (e is null)
+        if (expense is null)
             return NotFound();
 
-        var dto = new
-        {
-            e.Id,
-            e.Amount,
-            e.OccurredOnUtc,
-            e.Note,
-            Account = new { e.AccountId, e.Account.Name },
-            Category = new { e.CategoryId, e.Category.Name, e.Category.Type }
-        };
-
+        var dto = _mapper.Map<ExpenseDto>(expense);
         return Ok(dto);
     }
 
-    // GET: /api/expenses/by-account/{accountId}?from=2025-11-01&to=2025-11-30
+    // GET: /api/expenses/by-account/{accountId}?from=...&to=...
     [HttpGet("by-account/{accountId:int}")]
-    public async Task<ActionResult<IEnumerable<object>>> GetByAccount(
+    public async Task<ActionResult<IEnumerable<ExpenseDto>>> GetByAccount(
         int accountId, DateTime? from, DateTime? to)
     {
         var expenses = await _expenseService.GetByAccountAsync(accountId, from, to);
+        var dtos = _mapper.Map<List<ExpenseDto>>(expenses);
 
-        var data = expenses
-            .Select(e => new
-            {
-                e.Id,
-                e.Amount,
-                e.OccurredOnUtc,
-                e.Note,
-                Category = new { e.CategoryId, e.Category.Name, e.Category.Type }
-            })
-            .OrderByDescending(e => e.OccurredOnUtc)
-            .ToList();
+        // keep the same ordering
+        dtos = dtos.OrderByDescending(e => e.OccurredOnUtc).ToList();
 
-        return Ok(data);
+        return Ok(dtos);
     }
 
-    // GET: /api/expenses/by-category/{categoryId}?from=2025-11-01&to=2025-11-30
+    // GET: /api/expenses/by-category/{categoryId}?from=...&to=...
     [HttpGet("by-category/{categoryId:int}")]
-    public async Task<ActionResult<IEnumerable<object>>> GetByCategory(
+    public async Task<ActionResult<IEnumerable<ExpenseDto>>> GetByCategory(
         int categoryId, DateTime? from, DateTime? to)
     {
         var expenses = await _expenseService.GetByCategoryAsync(categoryId, from, to);
+        var dtos = _mapper.Map<List<ExpenseDto>>(expenses);
 
-        var data = expenses
-            .Select(e => new
-            {
-                e.Id,
-                e.Amount,
-                e.OccurredOnUtc,
-                e.Note,
-                Account = new { e.AccountId, e.Account.Name }
-            })
-            .OrderByDescending(e => e.OccurredOnUtc)
-            .ToList();
+        dtos = dtos.OrderByDescending(e => e.OccurredOnUtc).ToList();
 
-        return Ok(data);
+        return Ok(dtos);
     }
 
-    // GET: /api/expenses/range?from=2025-11-01&to=2025-11-30
+    // GET: /api/expenses/range?from=...&to=...
     [HttpGet("range")]
-    public async Task<ActionResult<IEnumerable<object>>> GetByDateRange(
+    public async Task<ActionResult<IEnumerable<ExpenseDto>>> GetByDateRange(
         DateTime? from, DateTime? to)
     {
         var expenses = await _expenseService.GetByDateRangeAsync(from, to);
+        var dtos = _mapper.Map<List<ExpenseDto>>(expenses);
 
-        var data = expenses
-            .Select(e => new
-            {
-                e.Id,
-                e.Amount,
-                e.OccurredOnUtc,
-                e.Note,
-                Account = new { e.AccountId, e.Account.Name },
-                Category = new { e.CategoryId, e.Category.Name, e.Category.Type }
-            })
-            .OrderByDescending(e => e.OccurredOnUtc)
-            .ToList();
+        dtos = dtos.OrderByDescending(e => e.OccurredOnUtc).ToList();
 
-        return Ok(data);
+        return Ok(dtos);
     }
-
-    public record CreateExpenseRequest(int AccountId, int CategoryId, decimal Amount, string? Note, DateTime OccurredOnUtc);
 
     // POST: /api/expenses
     [HttpPost]
-    public async Task<ActionResult<object>> Create(CreateExpenseRequest req)
+    public async Task<ActionResult<ExpenseDto>> Create(CreateExpenseDto dto)
     {
-        if (req.Amount <= 0)
+        if (dto.Amount <= 0)
             return ValidationProblem("Amount must be greater than 0.");
 
         try
         {
             var expense = await _expenseService.CreateAsync(
-                req.AccountId,
-                req.CategoryId,
-                req.Amount,
-                req.Note,
-                req.OccurredOnUtc);
+                dto.AccountId,
+                dto.CategoryId,
+                dto.Amount,
+                dto.Note,
+                dto.OccurredOnUtc);
 
-            var dto = new
-            {
-                expense.Id,
-                expense.Amount,
-                expense.OccurredOnUtc,
-                expense.Note,
-                Account = new { expense.AccountId },
-                Category = new { expense.CategoryId }
-            };
+            // We need Account and Category loaded for mapping.
+            // Simplest: re-read with details via service:
+            var withDetails = await _expenseService.GetByIdWithDetailsAsync(expense.Id);
+            var result = _mapper.Map<ExpenseDto>(withDetails!);
 
-            return CreatedAtAction(nameof(GetById), new { id = expense.Id }, dto);
+            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
         catch (InvalidOperationException ex)
         {
-            // from the service when account/category is invalid
             return ValidationProblem(ex.Message);
         }
     }

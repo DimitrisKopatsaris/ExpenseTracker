@@ -1,5 +1,9 @@
+
+using AutoMapper;
 using ExpenseTracker.Application.Interfaces.Repositories;
 using ExpenseTracker.Application.Interfaces.Services;
+using Microsoft.Extensions.Logging;
+using ExpenseTracker.Application.Mappings;
 using ExpenseTracker.Application.Services;
 using ExpenseTracker.Infrastructure;
 using ExpenseTracker.Infrastructure.Repositories;
@@ -23,6 +27,23 @@ builder.Services.AddDbContext<ExpenseTrackerDbContext>(options =>   //register m
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
+
+// AutoMapper (manual registration for AutoMapper v16+)
+builder.Services.AddSingleton<AutoMapper.IMapper>(sp =>
+{
+    var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+
+    var config = new AutoMapper.MapperConfiguration(cfg =>
+    {
+        cfg.AddMaps(typeof(ExpenseTrackerMappingProfile).Assembly);
+    }, loggerFactory);
+
+    config.AssertConfigurationIsValid();
+    return config.CreateMapper();
+});
+
+
+
 
 var app = builder.Build(); //create the web app pipeline object
 
