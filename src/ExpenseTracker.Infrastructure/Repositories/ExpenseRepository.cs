@@ -15,24 +15,6 @@ namespace ExpenseTracker.Infrastructure.Repositories
         {
         }
 
-        public async Task<IReadOnlyList<Expense>> GetAllWithDetailsAsync()
-        {
-            return await _dbContext.Expenses
-                .AsNoTracking()
-                .Include(e => e.Account)
-                .Include(e => e.Category)
-                .ToListAsync();
-        }
-
-        public async Task<Expense?> GetByIdWithDetailsAsync(int id)
-        {
-            return await _dbContext.Expenses
-                .AsNoTracking()
-                .Include(e => e.Account)
-                .Include(e => e.Category)
-                .FirstOrDefaultAsync(e => e.Id == id);
-        }
-
         public async Task<IReadOnlyList<Expense>> GetByAccountAsync(
             int accountId,
             DateTime? from = null,

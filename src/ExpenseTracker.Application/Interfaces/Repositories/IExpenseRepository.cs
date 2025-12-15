@@ -10,8 +10,6 @@ namespace ExpenseTracker.Application.Interfaces.Repositories
     /// </summary>
     public interface IExpenseRepository : IGenericRepository<Expense>
     {
-        Task<IReadOnlyList<Expense>> GetAllWithDetailsAsync();
-        Task<Expense?> GetByIdWithDetailsAsync(int id);
 
         Task<IReadOnlyList<Expense>> GetByAccountAsync(
             int accountId,

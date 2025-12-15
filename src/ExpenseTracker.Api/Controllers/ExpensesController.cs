@@ -25,7 +25,7 @@ public class ExpensesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ExpenseDto>>> GetAll()
     {
-        var expenses = await _expenseService.GetAllWithDetailsAsync();
+        var expenses = await _expenseService.GetAllAsync();
         var dtos = _mapper.Map<List<ExpenseDto>>(expenses);
         return Ok(dtos);
     }
@@ -34,7 +34,7 @@ public class ExpensesController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ExpenseDto>> GetById(int id)
     {
-        var expense = await _expenseService.GetByIdWithDetailsAsync(id);
+        var expense = await _expenseService.GetByIdAsync(id);
 
         if (expense is null)
             return NotFound();
@@ -101,7 +101,7 @@ public class ExpensesController : ControllerBase
 
             // We need Account and Category loaded for mapping.
             // Simplest: re-read with details via service:
-            var withDetails = await _expenseService.GetByIdWithDetailsAsync(expense.Id);
+            var withDetails = await _expenseService.GetByIdAsync(expense.Id);
             var result = _mapper.Map<ExpenseDto>(withDetails!);
 
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
@@ -110,5 +110,39 @@ public class ExpensesController : ControllerBase
         {
             return ValidationProblem(ex.Message);
         }
+        catch (ArgumentException ex)
+        {
+            return ValidationProblem(ex.Message);
+        }
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<ExpenseDto>> Update(int id, UpdateExpenseDto dto)
+    {
+        try
+        {
+            var updated = await _expenseService.UpdateAsync(id,dto.AccountId,dto.CategoryId,dto.Amount,dto.Note,dto.OccurredOnUtc);
+            if (updated is null) return NotFound();
+
+            return Ok(_mapper.Map<ExpenseDto>(updated));
+        }   
+        catch (InvalidOperationException ex)
+        {
+            return Conflict( new {message = ex.Message});
+        }
+        catch (ArgumentException ex)
+        {
+            return ValidationProblem(ex.Message);
+        }
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var deleted = await _expenseService.DeleteAsync(id);
+
+        if(!deleted) return NotFound();
+
+        return NoContent();
     }
 }
