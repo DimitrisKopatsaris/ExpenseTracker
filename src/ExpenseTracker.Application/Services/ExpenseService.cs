@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using ExpenseTracker.Application.Interfaces.Repositories;
 using ExpenseTracker.Application.Interfaces.Services;
@@ -47,7 +46,6 @@ namespace ExpenseTracker.Application.Services
         }
 
 
-
         public async Task<Expense> CreateAsync(
             int accountId,
             int categoryId,
@@ -76,7 +74,8 @@ namespace ExpenseTracker.Application.Services
             await _expenseRepository.AddAsync(expense);
             await _expenseRepository.SaveChangesAsync();
 
-            return expense;
+            var full = await _expenseRepository.GetByIdWithDetailsAsync(expense.Id);
+            return full ?? expense;
         }
 
         public async Task<Expense?> UpdateAsync(
@@ -90,7 +89,7 @@ namespace ExpenseTracker.Application.Services
         {
           if (amount <= 0)
             {
-                throw new ArgumentException("Amount must be greater  that 0.", nameof(amount));
+                throw new ArgumentOutOfRangeException("Amount must be greater  that 0.", nameof(amount));
             }  
           var expense = await _expenseRepository.GetByIdAsync(id);
           if (expense is null) return null;
@@ -112,7 +111,8 @@ namespace ExpenseTracker.Application.Services
           _expenseRepository.Update(expense);
           await _expenseRepository.SaveChangesAsync();
 
-          return expense;  
+          var full = await _expenseRepository.GetByIdWithDetailsAsync(expense.Id);
+          return full ?? expense;
         }
         public async Task<bool> DeleteAsync(int id)
         {

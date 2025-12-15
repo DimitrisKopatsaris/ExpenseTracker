@@ -13,6 +13,7 @@ namespace ExpenseTracker.Application.Interfaces.Services
         Task<IReadOnlyList<Expense>> GetByAccountAsync(int accountId, DateTime? from, DateTime? to);
         Task<IReadOnlyList<Expense>> GetByCategoryAsync(int categoryId, DateTime? from, DateTime? to);
         Task<IReadOnlyList<Expense>> GetByDateRangeAsync(DateTime? from, DateTime? to);
+
         Task<Expense> CreateAsync(
             int accountId,
             int categoryId,

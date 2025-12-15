@@ -15,6 +15,16 @@ namespace ExpenseTracker.Infrastructure.Repositories
         {
         }
 
+        public async Task<Expense?> GetByIdWithDetailsAsync(int id)
+        {
+            return await _dbContext.Expenses
+                .AsNoTracking()
+                .Include(e => e.Account)
+                .Include(e => e.Category)
+                .FirstOrDefaultAsync(e => e.Id == id);
+        }
+
+
         public async Task<IReadOnlyList<Expense>> GetByAccountAsync(
             int accountId,
             DateTime? from = null,
@@ -27,6 +37,7 @@ namespace ExpenseTracker.Infrastructure.Repositories
             query = ApplyDateFilter(query, from, to);
 
             return await query
+                .Include(e => e.Account)
                 .Include(e => e.Category)
                 .OrderByDescending(e => e.OccurredOnUtc)
                 .ToListAsync();
@@ -45,6 +56,7 @@ namespace ExpenseTracker.Infrastructure.Repositories
 
             return await query
                 .Include(e => e.Account)
+                .Include(e => e.Category)
                 .OrderByDescending(e => e.OccurredOnUtc)
                 .ToListAsync();
         }

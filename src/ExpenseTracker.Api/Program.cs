@@ -1,54 +1,59 @@
-
-using AutoMapper;
+using ExpenseTracker.Api.Middleware;
 using ExpenseTracker.Application.Interfaces.Repositories;
 using ExpenseTracker.Application.Interfaces.Services;
-using Microsoft.Extensions.Logging;
 using ExpenseTracker.Application.Mappings;
 using ExpenseTracker.Application.Services;
 using ExpenseTracker.Infrastructure;
 using ExpenseTracker.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using AutoMapper;
+using Microsoft.Extensions.Logging;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers(); //asss MVC controllers, to [ApiController] classes work
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add SQL Server connection
-builder.Services.AddDbContext<ExpenseTrackerDbContext>(options =>   //register my database context named ExpenseTrackerDbContext in the dependecy injection container and cofigure it to use sql server with the connection string called DefaulConnection from my configuration file.
+// DbContext
+builder.Services.AddDbContext<ExpenseTrackerDbContext>(options =>
 {
     var cs = builder.Configuration.GetConnectionString("DefaultConnection");
-    options.UseSqlServer(cs); //take the ConnectionString from my appsetting.Development.json and use in order to make a database using SQL server
-    //now the database exists and when i want later to use it inside my controller, i can simply make a constructor using it with DI ... (_db = db)
+    options.UseSqlServer(cs);
 });
 
+// Repositories
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
-// Services (Application)
+
+// Services
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
 
-// AutoMapper (manual registration for AutoMapper v16+)
-builder.Services.AddSingleton<AutoMapper.IMapper>(sp =>
+builder.Services.AddSingleton(sp =>
 {
     var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
 
-    var config = new AutoMapper.MapperConfiguration(cfg =>
-    {
-        cfg.AddMaps(typeof(ExpenseTrackerMappingProfile).Assembly);
-    }, loggerFactory);
-
-    config.AssertConfigurationIsValid();
-    return config.CreateMapper();
+    return new AutoMapper.MapperConfiguration(
+        (AutoMapper.IMapperConfigurationExpression cfg) =>
+        {
+            cfg.AddProfile<ExpenseTrackerMappingProfile>();
+            // or: cfg.AddMaps(typeof(ExpenseTrackerMappingProfile).Assembly);
+        },
+        loggerFactory
+    );
 });
 
+builder.Services.AddScoped<AutoMapper.IMapper>(sp =>
+    sp.GetRequiredService<AutoMapper.MapperConfiguration>().CreateMapper()
+);
 
 
 
-var app = builder.Build(); //create the web app pipeline object
+var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
@@ -56,10 +61,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 app.UseHttpsRedirection();
-app.MapControllers(); //activate attrubute routing so my controllers [Route] and [HttpGet] are reachable
-
-// Quick test endpoint
+app.MapControllers();
 app.MapGet("/ping", () => Results.Ok(new { ok = true, atUtc = DateTime.UtcNow }));
-
 app.Run();

@@ -10,7 +10,7 @@ namespace ExpenseTracker.Application.Interfaces.Repositories
     /// </summary>
     public interface IExpenseRepository : IGenericRepository<Expense>
     {
-
+        Task<Expense?> GetByIdWithDetailsAsync(int id);
         Task<IReadOnlyList<Expense>> GetByAccountAsync(
             int accountId,
             DateTime? from = null,

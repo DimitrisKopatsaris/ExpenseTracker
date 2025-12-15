@@ -87,53 +87,28 @@ public class ExpensesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ExpenseDto>> Create(CreateExpenseDto dto)
     {
-        if (dto.Amount <= 0)
-            return ValidationProblem("Amount must be greater than 0.");
+        
+        var created = await _expenseService.CreateAsync(
+        dto.AccountId,
+        dto.CategoryId,
+        dto.Amount,
+        dto.Note,
+        dto.OccurredOnUtc);
 
-        try
-        {
-            var expense = await _expenseService.CreateAsync(
-                dto.AccountId,
-                dto.CategoryId,
-                dto.Amount,
-                dto.Note,
-                dto.OccurredOnUtc);
-
-            // We need Account and Category loaded for mapping.
-            // Simplest: re-read with details via service:
-            var withDetails = await _expenseService.GetByIdAsync(expense.Id);
-            var result = _mapper.Map<ExpenseDto>(withDetails!);
-
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return ValidationProblem(ex.Message);
-        }
-        catch (ArgumentException ex)
-        {
-            return ValidationProblem(ex.Message);
-        }
+        var result = _mapper.Map<ExpenseDto>(created);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, result);
+       
     }
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<ExpenseDto>> Update(int id, UpdateExpenseDto dto)
     {
-        try
-        {
+       
             var updated = await _expenseService.UpdateAsync(id,dto.AccountId,dto.CategoryId,dto.Amount,dto.Note,dto.OccurredOnUtc);
             if (updated is null) return NotFound();
 
             return Ok(_mapper.Map<ExpenseDto>(updated));
-        }   
-        catch (InvalidOperationException ex)
-        {
-            return Conflict( new {message = ex.Message});
-        }
-        catch (ArgumentException ex)
-        {
-            return ValidationProblem(ex.Message);
-        }
+    
     }
 
     [HttpDelete("{id:int}")]
